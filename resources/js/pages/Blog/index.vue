@@ -1,4 +1,4 @@
-// Define the props that this component accepts using TypeScript types 
+<!-- The script setup section defines the props that the component accepts -->
 <script setup lang="ts">
 defineProps<{
   posts: any
