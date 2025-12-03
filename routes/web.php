@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
-use App\http\Controllers\PostController;
+use App\Http\Controllers\PostController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
