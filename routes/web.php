@@ -15,10 +15,10 @@ Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-// Post routes
-// Show list of blog posts
+// Blog routes (public)
 Route::get('/blog', [PostController::class, 'index'])->name('blog.index');
-// Show a single blog post by slug
+Route::get('/blog/create', [PostController::class, 'create'])->name('blog.create');
+Route::post('/blog', [PostController::class, 'store'])->name('blog.store');
 Route::get('/blog/{slug}', [PostController::class, 'show'])->name('blog.show');
 
 require __DIR__.'/settings.php';
