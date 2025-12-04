@@ -1,11 +1,56 @@
 <!-- The script setup section defines the props that the component accepts -->
 <script setup lang="ts">
+import { usePage } from '@inertiajs/vue3';
+import axios from '../../bootstrap';
+
 defineProps<{
   posts: any
 }>();
+
+const page = usePage()
+
+// Optional chaining (?.) allows safely accessing nested properties without
+// throwing errors if something is undefined. 
+// Double bang (!!) converts any truthy/falsy value into a strict boolean.
+
+// Function to check if the current user can edit a post
+const canEdit = (post: any) => {
+  const user = (page.props as any).auth?.user
+  if (post?.can?.update !== undefined) {
+    return !!post.can.update
+  }
+  // Fallback: only the author can edit
+  if (!user) return false
+  return post.user_id === user.id
+}
+
+// Function to check if the current user can delete a post
+const canDelete = (post: any) => {
+  const user = (page.props as any).auth?.user
+  if (post?.can?.delete !== undefined) {
+    return !!post.can.delete
+  }
+  // Fallback: only the author can delete
+  if (!user) return false
+  return post.user_id === user.id
+}
+
+// Function to delete a post
+const deletePost = async (post:any) => {
+  if (!confirm('Are you sure you want to delete this post?')) {
+    return
+  }
+  // Send delete request
+  try {
+    await axios.delete(`/blog/${post.id}`)
+    window.location.href = '/blog'
+  } catch (error) {
+    console.error('Error deleting post:', error)
+    alert('An error occurred while deleting the post.')
+  }
+
 </script>
 
-<!-- The template section defines the HTML structure and layout of the blog index page --> 
 <template>
   <div class="min-h-screen bg-white">
     <div class="mx-auto max-w-4xl px-4 py-12">
@@ -22,7 +67,6 @@ defineProps<{
         </a>
       </div>
 
-      <!-- ...existing code per i post... -->
       <div class="space-y-8">
         <article 
           v-for="post in posts.data" 
@@ -40,9 +84,30 @@ defineProps<{
             {{ post.category }}
           </div>
           <p class="text-gray-700">{{ post.content.substring(0, 200) }}...</p>
-          <a :href="`/blog/${post.slug}`" class="mt-4 inline-block text-blue-600 hover:underline">
-            Read more →
-          </a>
+          <div class="mt-4 flex items-center gap-4">
+            <a :href="`/blog/${post.slug}`" class="inline-block text-blue-600 hover:underline">
+              Read more →
+            </a>
+
+            <!-- Edit / Delete only if authorized -->
+            <div class="ml-auto flex gap-2" v-if="canEdit(post) || canDelete(post)">
+              <a
+                v-if="canEdit(post)"
+                :href="`/blog/${post.id}/edit`"
+                class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+              >
+                Edit
+              </a>
+
+              <button
+                v-if="canDelete(post)"
+                @click.prevent="deletePost(post)"
+                class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </article>
       </div>
 

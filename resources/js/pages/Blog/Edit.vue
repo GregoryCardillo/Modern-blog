@@ -1,10 +1,18 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { Ref } from 'vue'
-import axios from '../../bootstrap' // import of the bootstrap.ts file created in resources/js
+import axios from '../../bootstrap'
 import { router } from '@inertiajs/vue3'
 
-// Define the structure of the blog form data
+const props = defineProps<{ post: {
+  id: number,
+  title: string,
+  content: string,
+  category: string,
+  image?: string|null,
+  published_at?: string|null
+} }>()
+
 type BlogForm = {
   title: string
   content: string
@@ -13,34 +21,30 @@ type BlogForm = {
   published_at: string
 }
 
-// Reactive form data
+// Initialize form with existing post data
 const form = ref<BlogForm>({
-  title: '',
-  content: '',
-  category: 'News',
+  title: props.post.title ?? '',
+  content: props.post.content ?? '',
+  category: props.post.category ?? 'News',
   image: null,
-  published_at: new Date().toISOString().split('T')[0],
+  published_at: props.post.published_at ? props.post.published_at.split('T')[0] : new Date().toISOString().split('T')[0],
 })
-
-// Reactive variables for image preview and submission state
-const imagePreview: Ref<string | ArrayBuffer | null> = ref(null)
+// For existing image preview
+const existingImage = ref<string | null>(props.post.image ?? null)
+const imagePreview: Ref<string | ArrayBuffer | null> = ref(existingImage.value)
+// Submission state
 const isSubmitting = ref(false)
-
-// Validation errors returned from server
+// Validation errors
 const errors = ref<Record<string, string[]>>({})
 
 // Function to handle image file selection
 const handleImageChange = (e: Event) => {
   const target = e.target as HTMLInputElement
   const file = target.files?.[0]
-  
   if (file) {
     form.value.image = file
-    // Shows image preview
     const reader = new FileReader()
-    reader.onload = (ev) => {
-      imagePreview.value = ev.target?.result ?? null
-    }
+    reader.onload = (ev) => imagePreview.value = ev.target?.result ?? null
     reader.readAsDataURL(file)
   }
 }
@@ -56,47 +60,36 @@ const submitForm = async () => {
   formData.append('category', form.value.category)
   formData.append('published_at', form.value.published_at)
   if (form.value.image) formData.append('image', form.value.image)
+  formData.append('_method', 'PUT')
 
   try {
-    // axios configured in resources/js/bootstrap.ts (withCredentials + headers)
-    const response = await axios.post('/blog', formData, {
+    await axios.post(`/blog/${props.post.id}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
-
-    // On success, navigate with Inertia (SPA-friendly)
     router.visit('/blog')
   } catch (err: unknown) {
-    // Axios error handling
     if (axios.isAxiosError(err)) {
-      const status = err.response?.status
-
-      if (status === 419) {
-        // CSRF/session expired
-        alert('Session expired or missing CSRF token. The page will be reloaded.')
-        window.location.reload()
-        return
-      }
-
-      if (status === 422) {
-        // Validation errors
+      if (err.response?.status === 422) {
         errors.value = err.response?.data?.errors ?? {}
-        // Optionally show first message
-        const first = Object.values(errors.value)[0]?.[0]
-        if (first) alert(first)
-        return
-      }
-
-      const message = err.response?.data?.message
-      if (message) {
-        alert(message)
         return
       }
     }
-
-    console.error('Error submitting form:', err)
-    alert('An unexpected error occurred. Check the console for details.')
+    console.error(err)
+    alert('Errore durante l\'aggiornamento.')
   } finally {
     isSubmitting.value = false
+  }
+}
+
+// Function to delete the post
+const destroyPost = async () => {
+  if (!confirm('Sei sicuro di voler cancellare questo post?')) return
+  try {
+    await axios.delete(`/blog/${props.post.id}`)
+    router.visit('/blog')
+  } catch (err) {
+    console.error(err)
+    alert('Errore nella cancellazione.')
   }
 }
 </script>
