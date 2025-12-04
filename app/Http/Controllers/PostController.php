@@ -92,6 +92,20 @@ class PostController extends Controller
         return redirect()->route('post.index')->with('success', 'Post updated successfully.');
     }
 
+    // Delete a post from the database
+    public function destroy(Post $post)
+    {
+        // Remove the associated image file if it exists
+        if ($post->image) {
+            Storage::disk('public')->delete($post->image);
+        }
+
+        // Actually delete the post
+        $post->delete();
+
+        return redirect()->route('post.index')->with('success', 'Post deleted successfully.');
+    }
+
 
     // Store a newly created post in the database
     public function store(Request $request)
