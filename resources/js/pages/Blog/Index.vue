@@ -9,9 +9,20 @@ defineProps<{
 <template>
   <div class="min-h-screen bg-white">
     <div class="mx-auto max-w-4xl px-4 py-12">
-      <h1 class="mb-4 text-4xl font-bold">Blog</h1>
-      <p class="mb-12 text-gray-600">Latest news and articles</p>
+      <div class="mb-8 flex items-center justify-between">
+        <div>
+          <h1 class="mb-4 text-4xl font-bold">Blog</h1>
+          <p class="text-gray-600">Latest news and articles</p>
+        </div>
+        <a 
+          href="/blog/create" 
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          + New Post
+        </a>
+      </div>
 
+      <!-- ...existing code per i post... -->
       <div class="space-y-8">
         <article 
           v-for="post in posts.data" 
@@ -33,7 +44,7 @@ defineProps<{
             Read more →
           </a>
         </article>
-      </div> 
+      </div>
 
         <!-- Pagination --> 
       <div v-if="posts.links" class="mt-12 flex justify-center gap-2">

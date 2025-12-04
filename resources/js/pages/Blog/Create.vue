@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { Ref } from 'vue'
+import axios from '../../bootstrap' // import relativo al file bootstrap.ts creato in resources/js
+import { router } from '@inertiajs/vue3'
 
 // Define the structure of the blog form data
 type BlogForm = {
@@ -10,6 +12,7 @@ type BlogForm = {
   image: File | null
   published_at: string
 }
+
 // Reactive form data
 const form = ref<BlogForm>({
   title: '',
@@ -23,6 +26,9 @@ const form = ref<BlogForm>({
 const imagePreview: Ref<string | ArrayBuffer | null> = ref(null)
 const isSubmitting = ref(false)
 
+// Validation errors returned from server
+const errors = ref<Record<string, string[]>>({})
+
 // Function to handle image file selection
 const handleImageChange = (e: Event) => {
   const target = e.target as HTMLInputElement
@@ -33,60 +39,71 @@ const handleImageChange = (e: Event) => {
     
     // Shows image preview
     const reader = new FileReader()
-    reader.onload = (e) => {
-      imagePreview.value = e.target?.result ?? null
+    reader.onload = (ev) => {
+      imagePreview.value = ev.target?.result ?? null
     }
     reader.readAsDataURL(file)
   }
 }
 
-// Function to submit the form
+// Function to submit the form using axios + Inertia
 const submitForm = async () => {
   isSubmitting.value = true
-  
-  // FormData prepare for file and text upload 
+  errors.value = {}
+
   const formData = new FormData()
   formData.append('title', form.value.title)
   formData.append('content', form.value.content)
   formData.append('category', form.value.category)
   formData.append('published_at', form.value.published_at)
-  
-  // Append image file if exists
-  if (form.value.image) {
-    formData.append('image', form.value.image)
-  }
+  if (form.value.image) formData.append('image', form.value.image)
 
-  // Send POST request to server
   try {
-    const response = await fetch('/blog', {
-      method: 'POST',
-      body: formData,
-      // CSRF token for security
-      headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-      },
+    // axios configured in resources/js/bootstrap.ts (withCredentials + headers)
+    const response = await axios.post('/blog', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
     })
 
-    // Handle response
-    if (response.ok) {
-      window.location.href = '/blog'
-    } else {
-      alert('Errore nella creazione del post')
+    // On success, navigate with Inertia (SPA-friendly)
+    router.visit('/blog')
+  } catch (err: unknown) {
+    // Axios error handling
+    if (axios.isAxiosError(err)) {
+      const status = err.response?.status
+
+      if (status === 419) {
+        // CSRF/session expired
+        alert('Session expired or missing CSRF token. The page will be reloaded.')
+        window.location.reload()
+        return
+      }
+
+      if (status === 422) {
+        // Validation errors
+        errors.value = err.response?.data?.errors ?? {}
+        // Optionally show first message
+        const first = Object.values(errors.value)[0]?.[0]
+        if (first) alert(first)
+        return
+      }
+
+      const message = err.response?.data?.message
+      if (message) {
+        alert(message)
+        return
+      }
     }
 
-  // Catch network or other errors
-  } catch (error) {
-    console.error('Error:', error)
-    alert('Errore nella richiesta')
+    console.error('Error submitting form:', err)
+    alert('An unexpected error occurred. Check the console for details.')
   } finally {
     isSubmitting.value = false
   }
 }
 </script>
 
-<!-- Form creation -->
 <template>
-  <div class="min-h-screen bg-white">
+  <div class="min-h-screen bg-white text-black dark:text-white">
     <div class="mx-auto max-w-2xl px-4 py-12">
       <a href="/blog" class="mb-8 inline-block text-blue-600 hover:underline">
         ← Back to blog
@@ -97,7 +114,7 @@ const submitForm = async () => {
       <form @submit.prevent="submitForm" class="space-y-6">
         <!-- Title -->
         <div>
-          <label for="title" class="block text-sm font-medium text-gray-700 mb-2">
+          <label for="title" class="block text-sm font-medium text-black dark:text-gray-200 mb-2">
             Title
           </label>
           <input
@@ -105,31 +122,37 @@ const submitForm = async () => {
             v-model="form.title"
             type="text"
             required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-black dark:bg-gray-800 dark:text-white"
             placeholder="Post title"
           />
+          <div v-if="errors.title" class="mt-1 text-sm text-red-600">
+            <div v-for="(msg, idx) in errors.title" :key="idx">{{ msg }}</div>
+          </div>
         </div>
 
         <!-- Category -->
         <div>
-          <label for="category" class="block text-sm font-medium text-gray-700 mb-2">
+          <label for="category" class="block text-sm font-medium text-black dark:text-gray-200 mb-2">
             Category
           </label>
           <select
             id="category"
             v-model="form.category"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-black dark:bg-gray-800 dark:text-white"
           >
             <option>News</option>
             <option>Technology</option>
             <option>Tutorial</option>
             <option>Other</option>
           </select>
+          <div v-if="errors.category" class="mt-1 text-sm text-red-600">
+            <div v-for="(msg, idx) in errors.category" :key="idx">{{ msg }}</div>
+          </div>
         </div>
 
         <!-- Image -->
         <div>
-          <label for="image" class="block text-sm font-medium text-gray-700 mb-2">
+          <label for="image" class="block text-sm font-medium text-black dark:text-gray-200 mb-2">
             Image
           </label>
           <input
@@ -137,9 +160,12 @@ const submitForm = async () => {
             type="file"
             accept="image/*"
             @change="handleImageChange"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-black dark:bg-gray-800 dark:text-white"
           />
-          
+          <div v-if="errors.image" class="mt-1 text-sm text-red-600">
+            <div v-for="(msg, idx) in errors.image" :key="idx">{{ msg }}</div>
+          </div>
+
           <!-- Image Preview -->
           <div v-if="imagePreview" class="mt-4">
             <img :src="imagePreview as string" alt="Preview" class="max-w-full h-auto rounded-lg max-h-64" />
@@ -148,7 +174,7 @@ const submitForm = async () => {
 
         <!-- Content -->
         <div>
-          <label for="content" class="block text-sm font-medium text-gray-700 mb-2">
+          <label for="content" class="block text-sm font-medium text-black dark:text-gray-200 mb-2">
             Content
           </label>
           <textarea
@@ -156,22 +182,28 @@ const submitForm = async () => {
             v-model="form.content"
             required
             rows="12"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-black dark:bg-gray-800 dark:text-white font-mono"
             placeholder="Write your post content here..."
-          />
+          ></textarea>
+          <div v-if="errors.content" class="mt-1 text-sm text-red-600">
+            <div v-for="(msg, idx) in errors.content" :key="idx">{{ msg }}</div>
+          </div>
         </div>
 
         <!-- Publish Date -->
         <div>
-          <label for="published_at" class="block text-sm font-medium text-gray-700 mb-2">
+          <label for="published_at" class="block text-sm font-medium text-black dark:text-gray-200 mb-2">
             Publish Date
           </label>
           <input
             id="published_at"
             v-model="form.published_at"
             type="date"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-black dark:bg-gray-800 dark:text-white"
           />
+          <div v-if="errors.published_at" class="mt-1 text-sm text-red-600">
+            <div v-for="(msg, idx) in errors.published_at" :key="idx">{{ msg }}</div>
+          </div>
         </div>
 
         <!-- Submit Button -->
@@ -183,7 +215,7 @@ const submitForm = async () => {
           >
             {{ isSubmitting ? 'Creating...' : 'Create Post' }}
           </button>
-          <a href="/blog" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+          <a href="/blog" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-black dark:text-white">
             Cancel
           </a>
         </div>
