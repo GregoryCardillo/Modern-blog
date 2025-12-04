@@ -1,11 +1,11 @@
 <!-- The script setup section defines the props that the component accepts -->
 <script setup lang="ts">
-import { usePage } from '@inertiajs/vue3';
-import axios from '../../bootstrap';
+import { usePage } from '@inertiajs/vue3'
+import { Inertia } from '@inertiajs/inertia'
+// optional: keep axios import if you want to use it elsewhere
+import axios from '../../bootstrap'
 
-defineProps<{
-  posts: any
-}>();
+defineProps<{ posts: any }>()
 
 const page = usePage()
 
@@ -16,39 +16,49 @@ const page = usePage()
 // Function to check if the current user can edit a post
 const canEdit = (post: any) => {
   const user = (page.props as any).auth?.user
-  if (post?.can?.update !== undefined) {
-    return !!post.can.update
-  }
-  // Fallback: only the author can edit
+  if (post?.can?.update !== undefined) return !!post.can.update
   if (!user) return false
   return post.user_id === user.id
 }
 
-// Function to check if the current user can delete a post
 const canDelete = (post: any) => {
   const user = (page.props as any).auth?.user
-  if (post?.can?.delete !== undefined) {
-    return !!post.can.delete
-  }
-  // Fallback: only the author can delete
+  if (post?.can?.delete !== undefined) return !!post.can.delete
   if (!user) return false
   return post.user_id === user.id
 }
 
-// Function to delete a post
-const deletePost = async (post:any) => {
-  if (!confirm('Are you sure you want to delete this post?')) {
-    return
-  }
-  // Send delete request
-  try {
-    await axios.delete(`/blog/${post.id}`)
-    window.location.href = '/blog'
-  } catch (error) {
-    console.error('Error deleting post:', error)
-    alert('An error occurred while deleting the post.')
-  }
+interface PostCan {
+  update?: boolean
+  delete?: boolean
+}
 
+interface Post {
+  id: number
+  slug?: string
+  user_id?: number
+  can?: PostCan
+  [key: string]: any
+}
+
+const deletePost = (post: Post): void => {
+  if (!confirm('Sei sicuro di voler cancellare questo post?')) return
+
+  // use slug if your public routes use {post:slug}
+  const identifier: string | number = post.slug ?? post.id
+
+  // use Inertia.delete: keeps SPA behavior and works with Inertia middleware
+  Inertia.delete(`/blog/${identifier}`, {
+    onSuccess: () => {
+      // optional: Inertia refreshes automatically, but force a visit to the list
+      Inertia.visit('/blog')
+    },
+    onError: (errors: Record<string, any>) => {
+      console.error('Delete error', errors)
+      alert('Errore nella cancellazione del post.')
+    }
+  })
+}
 </script>
 
 <template>
