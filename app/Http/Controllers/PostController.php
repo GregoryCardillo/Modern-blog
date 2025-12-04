@@ -10,10 +10,14 @@ use Inertia\Inertia;
 use App\Models\Post;
 // Str helper for string manipulations
 use Illuminate\Support\Str;
+// Storage facade for file operations
+use Illuminate\Support\Facades\Storage;
 
 
 class PostController extends Controller
 {
+    
+    // Display a listing of published posts
     public function index()
     {
         // Fetch published posts ordered by published date in descending order and paginate the results by 10 per page
@@ -27,6 +31,7 @@ class PostController extends Controller
         ]);
     }
 
+    // Display a single post based on its slug
     public function show($slug)
     {
         // Fetch a single post by its slug where the published date is less than or equal to the current date. Take the first result or fail if not found (404).
@@ -38,6 +43,55 @@ class PostController extends Controller
             'post' => $post,
         ]);
     }
+
+    // Show the form for creating a new post
+    public function create()
+    {
+        return Inertia::render('Blog/Create');
+    }
+
+    // Show the form for editing an existing post
+    public function edit(Post $post)
+    {
+        return Inertia::render('Blog/Edit', [
+            'post' => $post,
+        ]);
+    }
+
+    // Update an existing post in the database
+    public function update(Request $request, Post $post)
+    {
+        $data = $request->validate([
+            'title' => 'required|string|max:255',
+            'content' => 'required|string',
+            'category' => 'required|string|max:100',
+            'image' => 'sometimes|nullable|image|max:5120',
+            'published_at' => 'nullable|date',
+        ]);
+
+        if ($request->hasFile('image')) {
+            // Save the new image 
+            $path = $request->file('image')->store('posts', 'public');
+
+            // Remove the old image if it exists
+            if ($post->image) {
+                Storage::disk('public')->delete($post->image);
+            }
+
+            $data['image'] = $path;
+        }
+
+        // Update slug if title has changed
+        if (isset($data['title']) && $data['title'] !== $post->title) {
+            $data['slug'] = Str::slug($data['title']);
+        }
+
+        // Update the post with the validated data
+        $post->update($data);
+
+        return redirect()->route('post.index')->with('success', 'Post updated successfully.');
+    }
+
 
     // Store a newly created post in the database
     public function store(Request $request)
@@ -60,7 +114,7 @@ class PostController extends Controller
         }
 
         // If published_at is not provided, set it to the current date and time
-        if (!isset($validated['published_at'])) {
+        if (empty($validated['published_at'])) {
             $validated['published_at'] = now();
         }
 
@@ -68,7 +122,7 @@ class PostController extends Controller
         Post::create($validated);
 
         // Redirect back to the posts index with a success message
-        return redirect()->route('blog.index')->with('succes', 'Post created successfully.');
+        return redirect()->route('blog.index')->with('success', 'Post created successfully.');
     }
 }
 
