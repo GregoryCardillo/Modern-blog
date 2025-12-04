@@ -16,6 +16,7 @@ class Post extends Model
         'image',
         'category',
         'published_at',
+        'user_id',
     ];
 
 // Cast published_at to a datetime object for easier date manipulations. 

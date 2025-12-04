@@ -35,3 +35,5 @@ defineProps<{
     </div>
   </div>
 </template>
+
+export { default as show } from './show'

@@ -2,60 +2,36 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3'
 import { Inertia } from '@inertiajs/inertia'
-// optional: keep axios import if you want to use it elsewhere
-import axios from '../../bootstrap'
 
 defineProps<{ posts: any }>()
 
 const page = usePage()
+const user = (page.props as any).auth?.user
 
-// Optional chaining (?.) allows safely accessing nested properties without
-// throwing errors if something is undefined. 
-// Double bang (!!) converts any truthy/falsy value into a strict boolean.
+// Check if current user is admin
+const isAdmin = (): boolean => {
+  return user?.role === 'admin'
+}
 
-// Function to check if the current user can edit a post
-const canEdit = (post: any) => {
-  const user = (page.props as any).auth?.user
+const canEdit = (post: any): boolean => {
   if (post?.can?.update !== undefined) return !!post.can.update
-  if (!user) return false
-  return post.user_id === user.id
+  return isAdmin()
 }
 
-const canDelete = (post: any) => {
-  const user = (page.props as any).auth?.user
+const canDelete = (post: any): boolean => {
   if (post?.can?.delete !== undefined) return !!post.can.delete
-  if (!user) return false
-  return post.user_id === user.id
+  return isAdmin()
 }
 
-interface PostCan {
-  update?: boolean
-  delete?: boolean
-}
-
-interface Post {
-  id: number
-  slug?: string
-  user_id?: number
-  can?: PostCan
-  [key: string]: any
-}
-
-const deletePost = (post: Post): void => {
-  if (!confirm('Sei sicuro di voler cancellare questo post?')) return
-
-  // use slug if your public routes use {post:slug}
-  const identifier: string | number = post.slug ?? post.id
-
-  // use Inertia.delete: keeps SPA behavior and works with Inertia middleware
+const deletePost = (post: any): void => {
+  if (!confirm('Are you sure you want to delete this post?')) return
+  
+  const identifier = post.slug ?? post.id
   Inertia.delete(`/blog/${identifier}`, {
-    onSuccess: () => {
-      // optional: Inertia refreshes automatically, but force a visit to the list
-      Inertia.visit('/blog')
-    },
-    onError: (errors: Record<string, any>) => {
+    onSuccess: () => Inertia.visit('/blog'),
+    onError: (errors) => {
       console.error('Delete error', errors)
-      alert('Errore nella cancellazione del post.')
+      alert('Error deleting the post.')
     }
   })
 }
@@ -69,7 +45,9 @@ const deletePost = (post: Post): void => {
           <h1 class="mb-4 text-4xl font-bold">Blog</h1>
           <p class="text-gray-600">Latest news and articles</p>
         </div>
+        <!-- Show "New Post" button only if admin -->
         <a 
+          v-if="isAdmin()"
           href="/blog/create" 
           class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
@@ -99,7 +77,7 @@ const deletePost = (post: Post): void => {
               Read more →
             </a>
 
-            <!-- Edit / Delete only if authorized -->
+            <!-- Edit / Delete only if admin -->
             <div class="ml-auto flex gap-2" v-if="canEdit(post) || canDelete(post)">
               <a
                 v-if="canEdit(post)"
@@ -121,7 +99,7 @@ const deletePost = (post: Post): void => {
         </article>
       </div>
 
-        <!-- Pagination --> 
+      <!-- Pagination -->
       <div v-if="posts.links" class="mt-12 flex justify-center gap-2">
         <a 
           v-for="link in posts.links"

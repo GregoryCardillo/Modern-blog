@@ -133,6 +133,7 @@ class PostController extends Controller
         }
 
         // Create a new post in the databse with the validated data
+        $validated['user_id'] = auth()->id();
         Post::create($validated);
 
         // Redirect back to the posts index with a success message
