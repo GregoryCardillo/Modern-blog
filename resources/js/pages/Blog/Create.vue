@@ -102,7 +102,7 @@ const submitForm = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-white text-black dark:text-white">
+  <div class="min-h-screen bg-white text-black">
     <div class="mx-auto max-w-2xl px-4 py-12">
       <a href="/blog" class="mb-8 inline-block text-blue-600 hover:underline">
         ← Back to blog
@@ -113,7 +113,7 @@ const submitForm = async () => {
       <form @submit.prevent="submitForm" class="space-y-6">
         <!-- Title -->
         <div>
-          <label for="title" class="block text-sm font-medium text-black dark:text-gray-200 mb-2">
+          <label for="title" class="block text-sm font-medium text-black mb-2">
             Title
           </label>
           <input
@@ -121,7 +121,7 @@ const submitForm = async () => {
             v-model="form.title"
             type="text"
             required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-black dark:bg-gray-800 dark:text-white"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-black"
             placeholder="Post title"
           />
           <div v-if="errors.title" class="mt-1 text-sm text-red-600">
@@ -131,13 +131,13 @@ const submitForm = async () => {
 
         <!-- Category -->
         <div>
-          <label for="category" class="block text-sm font-medium text-black dark:text-gray-200 mb-2">
+          <label for="category" class="block text-sm font-medium text-black mb-2">
             Category
           </label>
           <select
             id="category"
             v-model="form.category"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-black dark:bg-gray-800 dark:text-white"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-black"
           >
             <option>News</option>
             <option>Technology</option>
@@ -151,7 +151,7 @@ const submitForm = async () => {
 
         <!-- Image -->
         <div>
-          <label for="image" class="block text-sm font-medium text-black dark:text-gray-200 mb-2">
+          <label for="image" class="block text-sm font-medium text-black mb-2">
             Image
           </label>
           <input
@@ -159,7 +159,7 @@ const submitForm = async () => {
             type="file"
             accept="image/*"
             @change="handleImageChange"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-black dark:bg-gray-800 dark:text-white"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-black"
           />
           <div v-if="errors.image" class="mt-1 text-sm text-red-600">
             <div v-for="(msg, idx) in errors.image" :key="idx">{{ msg }}</div>
@@ -173,7 +173,7 @@ const submitForm = async () => {
 
         <!-- Content -->
         <div>
-          <label for="content" class="block text-sm font-medium text-black dark:text-gray-200 mb-2">
+          <label for="content" class="block text-sm font-medium text-black mb-2">
             Content
           </label>
           <textarea
@@ -181,7 +181,7 @@ const submitForm = async () => {
             v-model="form.content"
             required
             rows="12"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-black dark:bg-gray-800 dark:text-white font-mono"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-black font-mono"
             placeholder="Write your post content here..."
           ></textarea>
           <div v-if="errors.content" class="mt-1 text-sm text-red-600">
@@ -191,14 +191,14 @@ const submitForm = async () => {
 
         <!-- Publish Date -->
         <div>
-          <label for="published_at" class="block text-sm font-medium text-black dark:text-gray-200 mb-2">
+          <label for="published_at" class="block text-sm font-medium text-black mb-2">
             Publish Date
           </label>
           <input
             id="published_at"
             v-model="form.published_at"
             type="date"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-black dark:bg-gray-800 dark:text-white"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-black"
           />
           <div v-if="errors.published_at" class="mt-1 text-sm text-red-600">
             <div v-for="(msg, idx) in errors.published_at" :key="idx">{{ msg }}</div>
@@ -214,7 +214,7 @@ const submitForm = async () => {
           >
             {{ isSubmitting ? 'Creating...' : 'Create Post' }}
           </button>
-          <a href="/blog" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-black dark:text-white">
+          <a href="/blog" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-black">
             Cancel
           </a>
         </div>
