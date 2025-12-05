@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-// HTTP Request class for handling incoming requests
+ // HTTP Request class for handling incoming requests
 use Illuminate\Http\Request;
 // Inertia for server-driven single-page applications
 use Inertia\Inertia;
@@ -12,6 +12,7 @@ use App\Models\Post;
 use Illuminate\Support\Str;
 // Storage facade for file operations
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 
 class PostController extends Controller
@@ -26,6 +27,7 @@ class PostController extends Controller
             ->paginate(10);
 
         // Render the 'Blog/Index' view with the fetched posts
+        /** @return \Inertia\Response */
         return Inertia::render('Blog/Index', [
             'posts' => $posts,
         ]);
@@ -39,6 +41,7 @@ class PostController extends Controller
             ->where('published_at', '<=', now())
             ->firstOrFail();    
         
+        /** @return \Inertia\Response */
         return Inertia::render('Blog/Show', [
             'post' => $post,
         ]);
@@ -47,12 +50,14 @@ class PostController extends Controller
     // Show the form for creating a new post
     public function create()
     {
+        /** @return \Inertia\Response */
         return Inertia::render('Blog/Create');
     }
 
     // Show the form for editing an existing post
     public function edit(Post $post)
     {
+        /** @return \Inertia\Response */
         return Inertia::render('Blog/Edit', [
             'post' => $post,
         ]);
@@ -70,15 +75,22 @@ class PostController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            // Save the new image 
-            $path = $request->file('image')->store('posts', 'public');
+            $file = $request->file('image');
 
-            // Remove the old image if it exists
-            if ($post->image) {
-                Storage::disk('public')->delete($post->image);
+            if (is_array($file)) {
+                $file = reset($file);
             }
 
-            $data['image'] = $path;
+            if ($file) {
+                $path = $file->store('posts', 'public');
+
+                // Remove the old image if it exists
+                if (isset($post->image) && $post->image) {
+                    Storage::disk('public')->delete($post->image);
+                }
+
+                $data['image'] = $path;
+            }
         }
 
         // Update slug if title has changed
@@ -89,21 +101,23 @@ class PostController extends Controller
         // Update the post with the validated data
         $post->update($data);
 
-        return redirect()->route('post.index')->with('success', 'Post updated successfully.');
+        /** @return \Illuminate\Http\RedirectResponse */
+        return redirect()->route('blog.index')->with('success', 'Post updated successfully.');
     }
 
     // Delete a post from the database
     public function destroy(Post $post)
     {
         // Remove the associated image file if it exists
-        if ($post->image) {
+        if (isset($post->image) && $post->image) {
             Storage::disk('public')->delete($post->image);
         }
 
         // Actually delete the post
         $post->delete();
 
-        return redirect()->route('post.index')->with('success', 'Post deleted successfully.');
+        /** @return \Illuminate\Http\RedirectResponse */
+        return redirect()->route('blog.index')->with('success', 'Post deleted successfully.');
     }
 
 
@@ -124,7 +138,15 @@ class PostController extends Controller
 
         // If an image is uploaded, handle the file upload
         if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('posts', 'public');
+            $file = $request->file('image');
+
+            if (is_array($file)) {
+                $file = reset($file);
+            }
+
+            if ($file) {
+                $validated['image'] = $file->store('posts', 'public');
+            }
         }
 
         // If published_at is not provided, set it to the current date and time
@@ -133,7 +155,7 @@ class PostController extends Controller
         }
 
         // Create a new post in the databse with the validated data
-        $validated['user_id'] = auth()->id();
+        $validated['user_id'] = $request->user()?->id;
         Post::create($validated);
 
         // Redirect back to the posts index with a success message

@@ -6,6 +6,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Post;
+
+/**
+ * App\Models\User
+ *
+ * @property int $id
+ * @property string $name
+ * @property string $email
+ * @property string|null $role
+ * @property \Illuminate\Support\Carbon|null $email_verified_at
+ *
+ * @mixin \Illuminate\Database\Eloquent\Model
+ * @method static \Database\Factories\UserFactory factory(...$parameters)
+ */
 
 class User extends Authenticatable
 {
@@ -34,17 +48,14 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast.
      *
-     * @return array<string, string>
+     * @var array<string,string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
 
     /**
      * Check if the user is an admin.
@@ -57,7 +68,10 @@ class User extends Authenticatable
     /**
      * Relationship: user has many posts.
      */
-    public function posts()
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function posts(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Post::class);
     }
